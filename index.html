@@ -1,65 +1,212 @@
-<!DOCTYPE html>
-<html lang="en-us">
-  <head>
-    <meta charset="UTF-8">
-    <title>Dotgenerator by rodolfosantos</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="stylesheet" type="text/css" href="stylesheets/normalize.css" media="screen">
-    <link href='http://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
-    <link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen">
-    <link rel="stylesheet" type="text/css" href="stylesheets/github-light.css" media="screen">
-  </head>
-  <body>
-    <section class="page-header">
-      <h1 class="project-name">Dotgenerator</h1>
-      <h2 class="project-tagline">A simple Java generator for DOT (graph description language).</h2>
-      <a href="https://github.com/rodolfosantos/dotGenerator" class="btn">View on GitHub</a>
-      <a href="https://github.com/rodolfosantos/dotGenerator/zipball/master" class="btn">Download .zip</a>
-      <a href="https://github.com/rodolfosantos/dotGenerator/tarball/master" class="btn">Download .tar.gz</a>
-    </section>
+<!doctype html>
+<html>
+<head>
+  <title>Network | DOT language playground</title>
 
-    <section class="main-content">
-      <h3>
-<a id="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages" aria-hidden="true"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
+  <script type="text/javascript" src="dist/vis.js"></script>
+  <link href="dist/vis.css" rel="stylesheet" type="text/css" />
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+  <style type="text/css">
+    body, html {
+      font: 10pt sans;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      color: #4d4d4d;
+    }
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
+    #frame {
+      width: 100%;
+      height: 99%;
+    }
+    #frame td {
+      padding: 10px;
+      height: 100%;
+    }
+    #error {
+      color: red;
+    }
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+    #data {
+      width: 100%;
+      height: 100%;
+      border: 1px solid #d3d3d3;
+    }
 
-<h3>
-<a id="designer-templates" class="anchor" href="#designer-templates" aria-hidden="true"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
+    #mynetwork {
+      float: left;
+      width: 100%;
+      height: 100%;
+      border: 1px solid #d3d3d3;
+      box-sizing: border-box;
+      -moz-box-sizing: border-box;
+      overflow: hidden;
+    }
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+    textarea.example {
+      display: none;
+    }
+  </style>
+</head>
+<body onload="drawExample('example1')">
 
-<h3>
-<a id="rather-drive-stick" class="anchor" href="#rather-drive-stick" aria-hidden="true"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
+<table id="frame">
+  <col width="30%">
+  <col width="70%">
+  <tr>
+    <td colspan="2" style="height: 50px;">
+      <h1>DOT language playground</h1>
+      <div>
+        <a href="javascript: drawExample('example1')">example 1</a>
+        <a href="javascript: drawExample('example2')">example 2</a>
+        <a href="javascript: drawExample('example3')">example 3</a>
+      </div>
+      <div>
+        <br>
+        <button id="draw">Draw</button>
+        <span id="error"></span>
+      </div>
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <textarea id="data"></textarea>
+    </td>
+    <td>
+      <div id="mynetwork"></div>
+    </td>
+  </tr>
+</table>
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+<script type="text/javascript">
+  var network = null;
+  var data = null;
 
-<h3>
-<a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+  var btnDraw = document.getElementById('draw');
+  var txtData = document.getElementById('data');
+  var txtError = document.getElementById('error');
+  btnDraw.onclick = draw;
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+  // resize the network when window resizes
+  window.onresize = function () {
+    network.redraw()
+  };
 
-<h3>
-<a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
+  function destroy() {
+    if (network !== null) {
+      network.destroy();
+      network = null;
+    }
+  }
 
-<p>Having trouble with Pages? Check out the documentation at <a href="https://help.github.com/pages">https://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
+  // parse and draw the data
+  function draw () {
+    destroy();
+    try {
+      txtError.innerHTML = '';
 
-      <footer class="site-footer">
-        <span class="site-footer-owner"><a href="https://github.com/rodolfosantos/dotGenerator">Dotgenerator</a> is maintained by <a href="https://github.com/rodolfosantos">rodolfosantos</a>.</span>
+      // Provide a string with data in DOT language
+      data = {
+        dot: txtData.value
+      };
 
-        <span class="site-footer-credits">This page was generated by <a href="https://pages.github.com">GitHub Pages</a> using the <a href="https://github.com/jasonlong/cayman-theme">Cayman theme</a> by <a href="https://twitter.com/jasonlong">Jason Long</a>.</span>
-      </footer>
+      // create a network
+      var container = document.getElementById('mynetwork');
+      var options = {};
+      network = new vis.Network(container, data, options);
+    }
+    catch (err) {
+      // set the cursor at the position where the error occurred
+      var match = /\(char (.*)\)/.exec(err);
+      if (match) {
+        var pos = Number(match[1]);
+        if(txtData.setSelectionRange) {
+          txtData.focus();
+          txtData.setSelectionRange(pos, pos);
+        }
+      }
 
-    </section>
+      // show an error message
+      txtError.innerHTML =  err.toString();
+    }
+  }
 
-  
-  </body>
+  /**
+   * Draw an example
+   * @param {String} id HTML id of the textarea containing the example code
+   */
+  function drawExample(id) {
+    txtData.value = document.getElementById(id).value;
+    draw();
+  }
+</script>
+
+<textarea id="example1" class="example">
+  digraph {
+  node [shape=circle fontSize=16]
+  edge [length=100, color=gray, fontColor=black]
+
+  A -> A[label=0.5];
+  B -> B[label=1.2] -> C[label=0.7] -- A;
+  B -> D;
+  D -> {B; C}
+  D -> E[label=0.2];
+  F -> F;
+  A [
+  fontColor=white,
+  color=red,
+  ]
+  }
+</textarea>
+
+<textarea id="example2" class="example">
+  digraph topology
+  {
+  node[shape=circle fontSize=12]
+  edge[length=170 fontSize=12]
+  "10.0.255.1" -> "10.0.255.3"[label="1.000"];
+  "10.0.255.1" -> "10.0.255.2"[label="1.000"];
+  "10.0.255.1" -> "10.0.255.2"[label="1.000"];
+  "10.0.255.1" -> "10.0.255.3"[label="1.000"];
+  "10.0.255.2" -> "10.0.255.1"[label="1.000"];
+  "10.0.255.2" -> "10.0.255.3"[label="1.000"];
+  "10.0.255.3" -> "10.0.255.1"[label="1.000"];
+  "10.0.255.3" -> "10.0.255.2"[label="1.000"];
+  "10.0.255.3" -> "10.0.3.0/24"[label="HNA", shape=solid];
+  "10.0.3.0/24"[shape=box];
+  "10.0.255.2" -> "10.0.2.0/24"[label="HNA"];
+  "10.0.2.0/24"[shape=box];
+  "10.0.255.1" -> "10.0.1.0/24"[label="HNA"];
+  "10.0.1.0/24"[shape=box];
+  }
+</textarea>
+
+<textarea id="example3" class="example">
+  digraph G  {
+  // note: not all attributes are recognized and supported by Network
+  //       unrecognized attributes are ignored
+
+  node[width=.25,height=.375,fontsize=15]
+  node [shape=filled fillcolor=#F1AAF0]
+  0-> 0 ;
+  1-> 1 ;
+  2-> 2 ;
+  3-> 3 ;
+  4-> 4 ;
+  5-> 5 ;
+  6-> 6 ;
+  7-> 5 ;
+  8-> 8 ;
+  9-> 9 ;
+  10-> 10 ;
+  11-> 10 ;
+  12-> 12 ;
+  13-> 5 ;
+  14-> 10 ;
+  15-> 0 ;
+  }
+</textarea>
+
+</body>
 </html>
-
