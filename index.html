@@ -115,6 +115,7 @@
       var container = document.getElementById('mynetwork');
       var options = {};
       network = new vis.Network(container, data, options);
+      network.freezeSimulation(true);
     }
     catch (err) {
       // set the cursor at the position where the error occurred
